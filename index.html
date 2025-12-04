@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gulshan Store — Auth Demo (Signup / Login / Reset)</title>
+  <meta name="theme-color" content="#0f766e" />
+  <style>
+    :root{
+      --accent:#0f766e; --muted:#6b7280; --bg:#f8fafc; --card:#fff;
+    }
+    body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:#102030}
+    .wrap{max-width:980px;margin:28px auto;padding:18px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand .logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 20px rgba(2,6,23,0.04)}
+    h2{margin:0 0 10px;font-size:18px}
+    form{display:flex;flex-direction:column;gap:10px}
+    input, button, select{padding:10px;border-radius:8px;border:1px solid #e6edf0;font-size:14px}
+    .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;gap:10px}
+    .small{font-size:13px;color:var(--muted)}
+    .btn{background:var(--accent);color:#fff;border:none;cursor:pointer}
+    .linkbtn{background:transparent;border:0;color:var(--accent);cursor:pointer;padding:0;font-size:14px}
+    pre{white-space:pre-wrap;background:#f3f4f6;padding:8px;border-radius:6px;overflow:auto}
+    .info{padding:8px;border-radius:6px;background:#ecfeff;color:#024; font-size:14px}
+    .error{padding:8px;border-radius:6px;background:#ffecec;color:#800; font-size:14px}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">GZ</div>
+        <div>
+          <div style="font-weight:700">Gulshan Digital Zone</div>
+          <div class="muted" style="font-size:13px">Auth Demo — Signup / Login / Reset</div>
+        </div>
+      </div>
+      <div id="nav-area" style="display:flex;gap:10px;align-items:center">
+        <div id="user-bubble" style="display:none;align-items:center;gap:8px">
+          <img id="user-pic" src="" width="36" style="border-radius:50%;display:inline-block">
+          <span id="user-name" class="small"></span>
+          <button id="btn-logout" class="linkbtn">Logout</button>
+        </div>
+        <div id="not-logged" style="display:flex;gap:8px;align-items:center">
+          <button id="nav-login" class="linkbtn">Login</button>
+          <button id="nav-signup" class="linkbtn">Signup</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+
+      <!-- Left: main forms -->
+      <div>
+        <!-- Login Card -->
+        <div id="card-login" class="card" style="margin-bottom:12px;">
+          <h2>Login (Phone + Password)</h2>
+          <div id="login-msg"></div>
+          <form id="login-form">
+            <input name="phone" placeholder="Phone (e.g. +9198xxxxxxxx)" required />
+            <input name="password" placeholder="Password" type="password" required />
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn" type="submit">Login</button>
+              <button id="open-forgot" type="button" class="linkbtn">Forgot password?</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Signup Card -->
+        <div id="card-signup" class="card" style="margin-bottom:12px;display:none">
+          <h2>Signup (Name, Phone, Password, Email optional)</h2>
+          <div id="signup-msg"></div>
+          <form id="signup-form">
+            <input name="name" placeholder="Full name (optional)" />
+            <input name="phone" placeholder="Phone (e.g. +9198xxxxxxxx)" required />
+            <input name="email" placeholder="Email (optional but recommended for reset)" />
+            <input name="password" placeholder="Password (min 6 chars)" type="password" required />
+            <button class="btn" type="submit">Create account</button>
+          </form>
+        </div>
+
+        <!-- Forgot Password container -->
+        <div id="card-forgot" class="card" style="display:none; margin-bottom:12px;">
+          <h2>Forgot Password</h2>
+          <div class="small muted">Choose a method to reset password</div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button id="method-otp" class="btn" type="button">Email OTP (fast)</button>
+            <button id="method-link" class="btn" type="button">Send Reset Link</button>
+            <button id="back-to-login" class="linkbtn" type="button">Back</button>
+          </div>
+
+          <!-- OTP flow -->
+          <div id="forgot-otp-flow" style="display:none;margin-top:12px">
+            <div id="otp-msg"></div>
+            <form id="forgot-otp-form">
+              <input name="email" placeholder="Enter email (used at signup)" required />
+              <button type="submit" class="btn">Send OTP to Email</button>
+            </form>
+
+            <form id="verify-otp-form" style="display:none;margin-top:8px">
+              <input name="email" placeholder="Email" required />
+              <input name="otp" placeholder="Enter OTP" required />
+              <button type="submit" class="btn">Verify OTP</button>
+            </form>
+
+            <form id="reset-via-otp-form" style="display:none;margin-top:8px">
+              <input name="email" placeholder="Email" required />
+              <input name="token" placeholder="Reset Token (from verify)" required />
+              <input name="newPassword" placeholder="New password" type="password" required />
+              <button type="submit" class="btn">Reset Password</button>
+            </form>
+          </div>
+
+          <!-- Link flow -->
+          <div id="forgot-link-flow" style="display:none;margin-top:12px">
+            <div class="small muted">We will send a reset link to your email.</div>
+            <div id="link-msg"></div>
+            <form id="forgot-link-form">
+              <input name="email" placeholder="Enter email" required />
+              <button class="btn" type="submit">Send Reset Link</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Reset Page (for link) -->
+        <div id="card-reset" class="card" style="display:none;margin-bottom:12px;">
+          <h2>Reset password (via link / token)</h2>
+          <div id="reset-msg"></div>
+          <form id="reset-form">
+            <input name="email" placeholder="Email" required />
+            <input name="token" placeholder="Reset token (from email link)" required />
+            <input name="newPassword" placeholder="New password" type="password" required />
+            <button class="btn" type="submit">Set new password</button>
+          </form>
+        </div>
+
+        <!-- Change Password (logged-in) -->
+        <div id="card-change" class="card" style="display:none;margin-bottom:12px;">
+          <h2>Change password (You must be logged in)</h2>
+          <div id="change-msg"></div>
+          <form id="change-form">
+            <input name="oldPassword" placeholder="Current password" type="password" required />
+            <input name="newPassword" placeholder="New password" type="password" required />
+            <button class="btn" type="submit">Change password</button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right: status / helpful info -->
+      <aside class="card">
+        <h2>Status</h2>
+        <div id="status-area">
+          <div class="small muted">Backend base URL (change in script if needed):</div>
+          <pre id="api-base">https://your-backend.onrender.com</pre>
+          <div style="margin-top:8px" class="muted small">Local token (stored in localStorage):</div>
+          <pre id="token-area">-</pre>
+        </div>
+
+        <hr style="margin:12px 0">
+
+        <div>
+          <div class="small muted">Quick steps</div>
+          <ol style="padding-left:18px">
+            <li>Replace <code>API_BASE</code> in JS with your Render backend URL</li>
+            <li>Deploy this HTML to Netlify</li>
+            <li>Ensure SendGrid API and MongoDB Atlas are configured on backend</li>
+            <li>Use Forgot Password → Email OTP or Reset Link</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/* ===========================
+   CONFIG: replace this API_BASE with your Render backend URL
+   e.g. https://auth-demo-yourname.onrender.com
+   =========================== */
+const API_BASE = 'https://your-backend.onrender.com'; // <<< REPLACE THIS
+const FRONTEND_RESET_URL = location.origin + '/'; // used by reset link flow if needed
+
+// helpers
+const qs = sel => document.querySelector(sel);
+const setMsg = (el, text, isError=false) => { if(!el) return; el.innerHTML = text ? `<div class="${isError?'error':'info'}">${text}</div>` : ''; };
+
+// UI elements
+const loginForm = qs('#login-form');
+const signupForm = qs('#signup-form');
+const forgotCard = qs('#card-forgot');
+const loginCard = qs('#card-login');
+const signupCard = qs('#card-signup');
+const resetCard = qs('#card-reset');
+const changeCard = qs('#card-change');
+const otpFlow = qs('#forgot-otp-flow');
+const linkFlow = qs('#forgot-link-flow');
+
+const apiBaseEl = qs('#api-base');
+const tokenArea = qs('#token-area');
+apiBaseEl.textContent = API_BASE;
+
+// Nav toggles
+qs('#nav-login').addEventListener('click', ()=>{ loginCard.style.display='block'; signupCard.style.display='none'; });
+qs('#nav-signup').addEventListener('click', ()=>{ signupCard.style.display='block'; loginCard.style.display='none'; });
+
+// Open forgot
+qs('#open-forgot').addEventListener('click', ()=>{ forgotCard.style.display='block'; loginCard.style.display='none'; signupCard.style.display='none'; });
+
+// Back to login
+qs('#back-to-login').addEventListener('click', ()=>{ forgotCard.style.display='none'; loginCard.style.display='block'; signupCard.style.display='none'; });
+
+// Choose method
+qs('#method-otp').addEventListener('click', ()=>{ otpFlow.style.display='block'; linkFlow.style.display='none'; });
+qs('#method-link').addEventListener('click', ()=>{ linkFlow.style.display='block'; otpFlow.style.display='none'; });
+
+// Show/hide reset card if query params present (for link flow)
+(function checkQueryReset(){
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token'), email = params.get('email');
+  if(token && email){
+    resetCard.style.display='block';
+    qs('#reset-form input[name="email"]').value = email;
+    qs('#reset-form input[name="token"]').value = token;
+    // hide others
+    loginCard.style.display='none';
+    signupCard.style.display='none';
+    forgotCard.style.display='none';
+  }
+})();
+
+// Auth helpers
+function saveToken(token){
+  localStorage.setItem('auth_token', token);
+  tokenArea.textContent = token || '-';
+  updateNav();
+}
+function getToken(){ return localStorage.getItem('auth_token'); }
+function clearToken(){ localStorage.removeItem('auth_token'); tokenArea.textContent='-'; updateNav(); }
+
+async function api(path, opts={}){
+  const headers = opts.headers||{};
+  headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  const token = getToken();
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API_BASE + path, {...opts, headers});
+  let body;
+  try { body = await res.json(); } catch(e){ body = { error: 'Invalid JSON response' }; }
+  if(!res.ok) throw { status: res.status, body };
+  return body;
+}
+
+// Update nav area with user state
+async function updateNav(){
+  const token = getToken();
+  if(!token){
+    qs('#user-bubble').style.display='none';
+    qs('#not-logged').style.display='flex';
+    return;
+  }
+  try{
+    const me = await api('/api/me'); // we expect backend /api/me to exist (optional)
+    const user = me.user || me;
+    qs('#user-name').textContent = user.name || user.phone || user.email || 'Account';
+    qs('#user-pic').src = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+    qs('#user-bubble').style.display='flex';
+    qs('#not-logged').style.display='none';
+  }catch(err){
+    console.warn('Could not fetch /me', err);
+    qs('#user-bubble').style.display='none';
+    qs('#not-logged').style.display='flex';
+  }
+}
+updateNav();
+
+// Logout
+qs('#btn-logout').addEventListener('click', ()=>{
+  if(confirm('Logout karna hai?')) { clearToken(); alert('Logged out'); }
+});
+
+// ========== Signup ==========
+signupForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#signup-msg'), '');
+  const fd = new FormData(e.target);
+  const payload = { name: fd.get('name'), phone: fd.get('phone'), email: fd.get('email'), password: fd.get('password') };
+  try{
+    const res = await api('/api/signup', { method:'POST', body: JSON.stringify(payload) });
+    saveToken(res.token);
+    setMsg(qs('#signup-msg'), 'Signup successful. You are logged in.');
+    signupForm.reset();
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#signup-msg'), err.body?.error || 'Signup failed', true);
+  }
+});
+
+// ========== Login ==========
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#login-msg'), '');
+  const fd = new FormData(e.target);
+  const payload = { phone: fd.get('phone'), password: fd.get('password') };
+  try{
+    const res = await api('/api/login', { method:'POST', body: JSON.stringify(payload) });
+    saveToken(res.token);
+    setMsg(qs('#login-msg'), 'Login successful');
+    loginForm.reset();
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#login-msg'), err.body?.error || 'Login failed', true);
+  }
+});
+
+// ========== FORGOT: OTP (email) ==========
+qs('#forgot-otp-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#otp-msg'), '');
+  const email = new FormData(e.target).get('email');
+  try{
+    const res = await api('/api/forgot-password/otp', { method:'POST', body: JSON.stringify({ email }) });
+    setMsg(qs('#otp-msg'), res.message || 'OTP sent to email');
+    // show verify form prefill email
+    qs('#verify-otp-form').style.display='block';
+    qs('#verify-otp-form input[name="email"]').value = email;
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#otp-msg'), err.body?.error || 'Could not send OTP', true);
+  }
+});
+
+// Verify OTP
+qs('#verify-otp-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#otp-msg'), '');
+  const fd = new FormData(e.target);
+  const email = fd.get('email'), otp = fd.get('otp');
+  try{
+    const res = await api('/api/forgot-password/verify-otp', { method:'POST', body: JSON.stringify({ email, otp }) });
+    // res.resetToken will be returned
+    setMsg(qs('#otp-msg'), 'OTP verified. Use token to reset password (auto-filled below).');
+    qs('#reset-via-otp-form').style.display='block';
+    qs('#reset-via-otp-form input[name="email"]').value = email;
+    qs('#reset-via-otp-form input[name="token"]').value = res.resetToken;
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#otp-msg'), err.body?.error || 'OTP verification failed', true);
+  }
+});
+
+// Reset via OTP-created token
+qs('#reset-via-otp-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#otp-msg'), '');
+  const fd = new FormData(e.target);
+  const email = fd.get('email'), token = fd.get('token'), newPassword = fd.get('newPassword');
+  try{
+    const res = await api('/api/reset-password', { method:'POST', body: JSON.stringify({ email, token, newPassword }) });
+    setMsg(qs('#otp-msg'), res.message || 'Password reset successful');
+    // hide forms
+    qs('#verify-otp-form').style.display='none';
+    qs('#reset-via-otp-form').style.display='none';
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#otp-msg'), err.body?.error || 'Reset failed', true);
+  }
+});
+
+// ========== FORGOT: Reset Link ==========
+qs('#forgot-link-form').addEventListener('submit', async (e)=> {
+  e.preventDefault();
+  setMsg(qs('#link-msg'), '');
+  const email = new FormData(e.target).get('email');
+  try{
+    const res = await api('/api/forgot-password/link', { method:'POST', body: JSON.stringify({ email }) });
+    setMsg(qs('#link-msg'), res.message || 'Reset link sent to email (check inbox/spam)');
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#link-msg'), err.body?.error || 'Could not send reset link', true);
+  }
+});
+
+// ========== RESET via link/token form (on reset page) ==========
+qs('#reset-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#reset-msg'), '');
+  const fd = new FormData(e.target);
+  const email = fd.get('email'), token = fd.get('token'), newPassword = fd.get('newPassword');
+  try{
+    const res = await api('/api/reset-password', { method:'POST', body: JSON.stringify({ email, token, newPassword }) });
+    setMsg(qs('#reset-msg'), res.message || 'Password reset successful');
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#reset-msg'), err.body?.error || 'Reset failed', true);
+  }
+});
+
+// ========== CHANGE PASSWORD (logged-in) ==========
+qs('#change-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setMsg(qs('#change-msg'), '');
+  const fd = new FormData(e.target);
+  const oldPassword = fd.get('oldPassword'), newPassword = fd.get('newPassword');
+  try{
+    const res = await api('/api/change-password', { method:'POST', body: JSON.stringify({ oldPassword, newPassword }) });
+    setMsg(qs('#change-msg'), res.message || 'Password changed');
+  }catch(err){
+    console.error(err);
+    setMsg(qs('#change-msg'), err.body?.error || 'Change password failed', true);
+  }
+});
+
+// Make sure token area is populated when page loads
+tokenArea.textContent = getToken() || '-';
+
+// Optionally expose getToken for debugging:
+window._getToken = getToken;
+</script>
+</body>
+</html>
