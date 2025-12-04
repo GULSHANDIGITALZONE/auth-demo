@@ -12,7 +12,7 @@ const app = express();
 app.use(helmet());
 app.use(express.json());
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || '*' // restrict this to your Netlify domain in production
+  origin: process.env.FRONTEND_ORIGIN || '*'
 }));
 
 // Rate limiting (global)
@@ -39,4 +39,3 @@ app.get('/', (req,res)=>res.send('Auth demo running'));
 // Start
 const port = process.env.PORT || 8080;
 app.listen(port, ()=> console.log('Server listening on', port));
-
